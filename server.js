@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
-const User = require('./userModel'); 
+const User = require('./userModel');
 const viaticosRoutes = require('./viaticosRoutes');
 
 // --- 2. CONFIGURACIÓN INICIAL ---
@@ -14,18 +14,17 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // --- 3. MIDDLEWARE ---
-// --- 3. MIDDLEWARE ---
 const allowedOrigins = [
-  'http://localhost:5173',               // dev local (Vite)
-  'https://viatic-app.vercel.app/'          // <-- pon aquí tu dominio de Vercel
+  'http://localhost:5173',        // dev local (Vite)
+  'https://viatic-app.vercel.app' // <-- SIN slash final
 ];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
+// Healthcheck
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-
-// --- 4. CONEXIÓN A LA BASE DE DATOS (MongoDB) ---
+// --- 4. CONEXIÓN A MONGO ---
 mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 })
   .then(() => console.log('✅ Conectado a MongoDB Atlas'))
   .catch((err) => {
@@ -33,8 +32,7 @@ mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 })
     process.exit(1);
   });
 
-// --- 5. RUTAS DE AUTH/USUARIOS ---
-
+// --- 5. AUTH/USUARIOS ---
 app.post('/api/register', async (req, res) => {
   try {
     const { name, username, password } = req.body;
@@ -72,25 +70,15 @@ app.get('/api/user/:id', async (req, res) => {
   res.json(user);
 });
 
-// --- 6. RUTAS DE VIÁTICOS ---
-app.use('/api/viaticos', viaticosRoutes);
-
-// --- 7. INICIAR EL SERVIDOR ---
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
-});
-
+// PATCH usuario (mover antes de listen)
 app.patch('/api/user/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // Permite actualizar solo ciertos campos
     const allowed = ['name', 'username', 'foraneo'];
     const updates = {};
-
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
-
     const user = await User.findByIdAndUpdate(id, updates, { new: true });
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
     res.json(user);
@@ -98,4 +86,12 @@ app.patch('/api/user/:id', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Error al actualizar usuario' });
   }
+});
+
+// --- 6. VIÁTICOS ---
+app.use('/api/viaticos', viaticosRoutes);
+
+// --- 7. INICIAR SERVIDOR ---
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
 });
