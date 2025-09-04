@@ -17,10 +17,12 @@ const PORT = process.env.PORT || 4000;
 // --- 3. MIDDLEWARE ---
 const allowedOrigins = [
   'http://localhost:5173',               // dev local (Vite)
-  'https://TU-FRONT.vercel.app'          // <-- pon aquí tu dominio de Vercel
+  'https://viatic-app.vercel.app/'          // <-- pon aquí tu dominio de Vercel
 ];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
+
+app.get('/health', (req, res) => res.json({ ok: true }));
 
 
 // --- 4. CONEXIÓN A LA BASE DE DATOS (MongoDB) ---
